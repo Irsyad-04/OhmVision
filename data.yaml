@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 13
+names: ['black', 'blue', 'brown', 'gold', 'green', 'grey', 'orange', 'red', 'resistor', 'silver', 'violet', 'white', 'yellow']
+
+roboflow:
+  workspace: kel8d4aek
+  project: deteksi-nilai-resistor
+  version: 1
+  license: Private
+  url: https://app.roboflow.com/kel8d4aek/deteksi-nilai-resistor/1

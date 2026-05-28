@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>OhmVision</title>
+
+    <link rel="icon"
+    href="https://cdn-icons-png.flaticon.com/512/1614/1614527.png">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static',
+          filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+
+    <header class="header">
+
+        <div class="logo">
+
+            Ohm<span>Vision</span>
+
+        </div>
+
+        <p class="subtitle">
+
+            Resistor Detection
+
+        </p>
+
+    </header>
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <!-- LEFT -->
+
+        <div class="hero-content">
+
+            <h1>
+
+                Detect Resistor Value
+
+                <span>
+                    Instantly Process
+                </span>
+
+            </h1>
+
+            <p>
+
+                Upload resistor images or use live
+                camera detection for 4-band and
+                5-band resistors.
+
+            </p>
+
+            <div class="feature-row">
+
+                <!-- UPLOAD IMAGE -->
+
+                <button class="feature-btn"
+                onclick="openUpload()">
+
+                    Upload Image
+
+                </button>
+
+                <!-- LIVE CAMERA -->
+
+                <button class="feature-btn"
+                onclick="openCamera()">
+
+                    Live Camera
+
+                </button>
+
+                <!-- MOBILE CAMERA -->
+
+                <button class="feature-btn"
+                onclick="openMobileCamera()">
+
+                    Mobile Camera
+
+                </button>
+
+            </div>
+
+            <!-- HIDDEN INPUT -->
+
+            <input type="file"
+            id="uploadInput"
+            accept="image/*"
+            hidden>
+
+            <input type="file"
+            id="mobileCameraInput"
+            accept="image/*"
+            capture="environment"
+            hidden>
+
+        </div>
+
+        <!-- RIGHT -->
+
+        <div class="hero-image">
+
+            <h2>
+
+                Original Image
+
+            </h2>
+
+            {% if original_image %}
+
+                <img src="{{ original_image }}">
+
+            {% else %}
+
+                <div class="empty-state">
+
+                    Upload image to begin detection
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+    <!-- DETECTION -->
+
+    {% if result_image %}
+
+    <section class="detect-section">
+
+        <!-- IMAGE -->
+
+        <div class="camera-card">
+
+            <h2>
+
+                Image Detection
+
+            </h2>
+
+            <div class="camera-preview">
+
+                <img src="{{ result_image }}">
+
+            </div>
+
+        </div>
+
+        <!-- RESULT -->
+
+        <div class="result-card">
+
+            <!-- TYPE -->
+
+            <div class="result-group">
+
+                <p class="result-label">
+
+                    Resistor Type
+
+                </p>
+
+                <h2>
+
+                    {{ resistor_type }}
+
+                </h2>
+
+            </div>
+
+            <!-- VALUE -->
+
+            <div class="value-row">
+
+                <div>
+
+                    <p class="result-label">
+
+                        Resistance Value
+
+                    </p>
+
+                    <div class="resistance-value">
+
+                        {{ result_value }}
+
+                    </div>
+
+                </div>
+
+                <div>
+
+                    <p class="result-label">
+
+                        Tolerance
+
+                    </p>
+
+                    <div class="tolerance-value">
+
+                        {{ tolerance_value }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- BAND -->
+
+            <div class="result-group">
+
+                <p class="result-label">
+
+                    Detected Bands & Confidence
+
+                </p>
+
+                <div class="bands">
+
+                    {% for band in bands %}
+
+                    <div class="band-card">
+
+                        <div class="band {{ band }}">
+
+                            {{ band }}
+
+                        </div>
+
+                        <div class="band-detail">
+
+                            <span class="band-info">
+
+                                {{ band_info[loop.index0] }}
+
+                            </span>
+
+                            <span class="band-confidence">
+
+                                {{ band_confidence[loop.index0] }}
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            <!-- SAVE -->
+
+            <a href="{{ url_for('download_file',
+            filename=result_image.split('\\')[-1].split('/')[-1]) }}">
+
+                <button class="main-btn">
+
+                    Save Result
+
+                </button>
+
+            </a>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+    <!-- ERROR -->
+
+    {% if error_message %}
+
+    <div class="error-box">
+
+        {{ error_message }}
+
+    </div>
+
+    {% endif %}
+
+    <!-- UPLOAD FORM -->
+
+    <section class="upload-section">
+
+        <form method="POST"
+              enctype="multipart/form-data"
+              id="detectForm">
+
+            <input type="file"
+                   name="image"
+                   id="realFileInput"
+                   hidden>
+
+            <button type="submit"
+                    class="main-btn detect-btn">
+
+                Detect Resistor
+
+            </button>
+
+        </form>
+
+    </section>
+
+</div>
+
+<!-- LIVE CAMERA MODAL -->
+
+<div class="camera-modal"
+id="cameraModal">
+
+    <div class="camera-modal-content">
+
+        <video id="video"
+        autoplay></video>
+
+        <canvas id="canvas"
+        hidden></canvas>
+
+        <div class="camera-actions">
+
+            <button class="feature-btn"
+            onclick="captureImage()">
+
+                Capture & Detect
+
+            </button>
+
+            <button class="feature-btn"
+            onclick="closeCamera()">
+
+                Close
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- LOADING -->
+
+<div class="loading-overlay"
+id="loadingOverlay">
+
+    <div class="loader"></div>
+
+    <p>
+
+        Scanning resistor...
+
+    </p>
+
+</div>
+
+<!-- TOAST -->
+
+<div class="toast"
+id="toast">
+
+    Detection Completed Successfully
+
+</div>
+
+<script>
+
+const uploadInput =
+document.getElementById(
+"uploadInput"
+);
+
+const mobileInput =
+document.getElementById(
+"mobileCameraInput"
+);
+
+const realInput =
+document.getElementById(
+"realFileInput"
+);
+
+const form =
+document.getElementById(
+"detectForm"
+);
+
+const detectBtn =
+document.querySelector(
+".detect-btn"
+);
+
+const loading =
+document.getElementById(
+"loadingOverlay"
+);
+
+const modal =
+document.getElementById(
+"cameraModal"
+);
+
+const video =
+document.getElementById(
+"video"
+);
+
+const canvas =
+document.getElementById(
+"canvas"
+);
+
+let stream;
+
+// =====================
+// UPLOAD IMAGE
+// =====================
+
+function openUpload(){
+
+    uploadInput.click();
+}
+
+uploadInput.addEventListener(
+"change",
+()=>{
+
+    const dt =
+    new DataTransfer();
+
+    dt.items.add(
+    uploadInput.files[0]
+    );
+
+    realInput.files =
+    dt.files;
+
+    form.submit();
+});
+
+// =====================
+// MOBILE CAMERA
+// =====================
+
+function openMobileCamera(){
+
+    mobileInput.click();
+}
+
+mobileInput.addEventListener(
+"change",
+()=>{
+
+    const dt =
+    new DataTransfer();
+
+    dt.items.add(
+    mobileInput.files[0]
+    );
+
+    realInput.files =
+    dt.files;
+
+    form.submit();
+});
+
+// =====================
+// LIVE CAMERA
+// =====================
+
+async function openCamera(){
+
+    modal.classList.add(
+    "show"
+    );
+
+    stream =
+    await navigator.mediaDevices
+    .getUserMedia({
+
+        video:true
+
+    });
+
+    video.srcObject =
+    stream;
+}
+
+function closeCamera(){
+
+    modal.classList.remove(
+    "show"
+    );
+
+    if(stream){
+
+        stream.getTracks()
+        .forEach(track=>track.stop());
+    }
+}
+
+function captureImage(){
+
+    canvas.width =
+    video.videoWidth;
+
+    canvas.height =
+    video.videoHeight;
+
+    const ctx =
+    canvas.getContext("2d");
+
+    ctx.drawImage(
+    video,
+    0,
+    0
+    );
+
+    canvas.toBlob(blob=>{
+
+        const file =
+        new File(
+
+            [blob],
+
+            "live_camera.jpg",
+
+            {
+
+                type:"image/jpeg"
+
+            }
+
+        );
+
+        const dt =
+        new DataTransfer();
+
+        dt.items.add(file);
+
+        realInput.files =
+        dt.files;
+
+        form.submit();
+
+    });
+}
+
+// =====================
+// LOADING
+// =====================
+
+form.addEventListener(
+"submit",
+()=>{
+
+    loading.classList.add(
+    "show"
+    );
+
+    detectBtn.innerHTML =
+    "Scanning Resistor...";
+
+    detectBtn.disabled = true;
+});
+
+// =====================
+// AUTO SCROLL
+// =====================
+
+window.onload = ()=>{
+
+    const detectSection =
+    document.querySelector(
+    ".detect-section"
+    );
+
+    if(detectSection){
+
+        detectSection.scrollIntoView({
+
+            behavior:"smooth"
+
+        });
+
+        const toast =
+        document.getElementById(
+        "toast"
+        );
+
+        toast.classList.add(
+        "show"
+        );
+
+        setTimeout(()=>{
+
+            toast.classList.remove(
+            "show"
+            );
+
+        },3000);
+    }
+};
+
+</script>
+
+</body>
+</html>
