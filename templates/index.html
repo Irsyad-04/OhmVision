@@ -62,7 +62,7 @@
             <p>
 
                 Upload resistor images or use live
-                camera detection for 4-band and
+                camera detection, support for 4-band and
                 5-band resistors.
 
             </p>
@@ -118,24 +118,26 @@
         <div class="hero-image">
 
             <h2>
-
                 Original Image
-
             </h2>
 
-            {% if original_image %}
+            <img
+                id="previewImage"
+                src="{% if original_image %}{{ original_image }}{% endif %}"
+                {% if not original_image %}
+                style="display:none;"
+                {% endif %}
+            >
 
-                <img src="{{ original_image }}">
-
-            {% else %}
-
-                <div class="empty-state">
-
-                    Upload image to begin detection
-
-                </div>
-
-            {% endif %}
+            <div
+                id="emptyState"
+                class="empty-state"
+                {% if original_image %}
+                style="display:none;"
+                {% endif %}
+            >
+                Upload image to begin detection
+            </div>
 
         </div>
 
@@ -449,17 +451,38 @@ uploadInput.addEventListener(
 "change",
 ()=>{
 
+    const file =
+    uploadInput.files[0];
+
+    if(!file) return;
+
     const dt =
     new DataTransfer();
 
-    dt.items.add(
-    uploadInput.files[0]
-    );
+    dt.items.add(file);
 
     realInput.files =
     dt.files;
 
-    form.submit();
+    const preview =
+    document.getElementById(
+    "previewImage"
+    );
+
+    const empty =
+    document.getElementById(
+    "emptyState"
+    );
+
+    preview.src =
+    URL.createObjectURL(file);
+
+    preview.style.display =
+    "block";
+
+    empty.style.display =
+    "none";
+
 });
 
 // =====================
@@ -475,17 +498,38 @@ mobileInput.addEventListener(
 "change",
 ()=>{
 
+    const file =
+    mobileInput.files[0];
+
+    if(!file) return;
+
     const dt =
     new DataTransfer();
 
-    dt.items.add(
-    mobileInput.files[0]
-    );
+    dt.items.add(file);
 
     realInput.files =
     dt.files;
 
-    form.submit();
+    const preview =
+    document.getElementById(
+    "previewImage"
+    );
+
+    const empty =
+    document.getElementById(
+    "emptyState"
+    );
+
+    preview.src =
+    URL.createObjectURL(file);
+
+    preview.style.display =
+    "block";
+
+    empty.style.display =
+    "none";
+
 });
 
 // =====================

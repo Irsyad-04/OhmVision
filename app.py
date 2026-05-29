@@ -196,7 +196,7 @@ def home():
             results = model.predict(
 
                 source=upload_path,
-                conf=0.65
+                conf=0.60
 
             )
 
@@ -242,6 +242,11 @@ def home():
                     "x": x1
 
                 })
+
+            print("\n===== RAW DETECTIONS =====")
+
+            for d in detections:
+                 print(d)    
 
             # =====================
             # SORT LEFT TO RIGHT
@@ -306,6 +311,10 @@ def home():
             # UPDATE COLOR NAMES
 
             color_names = bands
+
+            print("\n===== FINAL COLORS =====")
+            print(color_names)
+            print("COUNT =", len(color_names))
 
             # =====================
             # RESISTOR TYPE
