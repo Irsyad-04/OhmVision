@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+.venv/
+venv/
+
+# Upload Images
+static/uploads/*
+
+# Keep uploads folder
+!static/uploads/.gitkeep
