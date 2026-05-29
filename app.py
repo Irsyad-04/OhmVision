@@ -74,25 +74,48 @@ tolerance_map = {
 
 def calculate_resistor(colors):
 
-    if len(colors) < 4:
+    # =====================
+    # 4 BAND RESISTOR
+    # =====================
+
+    if len(colors) == 4:
+
+        d1 = digit_map.get(colors[0], 0)
+        d2 = digit_map.get(colors[1], 0)
+
+        multiplier = multiplier_map.get(colors[2], 1)
+
+        value = ((d1 * 10) + d2) * multiplier
+
+    # =====================
+    # 5 BAND RESISTOR
+    # =====================
+
+    elif len(colors) == 5:
+
+        d1 = digit_map.get(colors[0], 0)
+        d2 = digit_map.get(colors[1], 0)
+        d3 = digit_map.get(colors[2], 0)
+
+        multiplier = multiplier_map.get(colors[3], 1)
+
+        value = ((d1 * 100) + (d2 * 10) + d3) * multiplier
+
+    else:
 
         return "Unknown"
 
-    d1 = digit_map.get(colors[0], 0)
-
-    d2 = digit_map.get(colors[1], 0)
-
-    multiplier = multiplier_map.get(colors[2], 1)
-
-    value = ((d1 * 10) + d2) * multiplier
+    # =====================
+    # FORMAT VALUE
+    # =====================
 
     if value >= 1000000:
 
-        return f"{value / 1000000:.1f} MΩ"
+        return f"{value / 1000000:.2f} MΩ"
 
     elif value >= 1000:
 
-        return f"{value / 1000:.1f} kΩ"
+        return f"{value / 1000:.2f} kΩ"
 
     else:
 
@@ -329,42 +352,75 @@ def home():
 
             for i, band in enumerate(color_names):
 
-                # DIGIT
+                # =====================
+                # 4 BAND
+                # =====================
 
-                if i == 0 or i == 1:
+                if len(color_names) == 4:
 
-                    info = str(
+                    if i in [0, 1]:
 
-                        digit_map.get(
+                        info = str(
+                            digit_map.get(
+                                band,
+                                "-"
+                            )
+                        )
+
+                    elif i == 2:
+
+                        info = str(
+                            multiplier_map.get(
+                                band,
+                                "-"
+                            )
+                        )
+
+                    elif i == 3:
+
+                        info = tolerance_map.get(
                             band,
                             "-"
                         )
 
-                    )
+                    else:
 
-                # MULTIPLIER
+                        info = "-"
 
-                elif i == 2:
+                # =====================
+                # 5 BAND
+                # =====================
 
-                    info = str(
+                elif len(color_names) == 5:
 
-                        multiplier_map.get(
+                    if i in [0, 1, 2]:
+
+                        info = str(
+                            digit_map.get(
+                                band,
+                                "-"
+                            )
+                        )
+
+                    elif i == 3:
+
+                        info = str(
+                            multiplier_map.get(
+                                band,
+                                "-"
+                            )
+                        )
+
+                    elif i == 4:
+
+                        info = tolerance_map.get(
                             band,
                             "-"
                         )
 
-                    )
+                    else:
 
-                # TOLERANCE
-
-                elif i == 3:
-
-                    info = tolerance_map.get(
-
-                        band,
-                        "-"
-
-                    )
+                        info = "-"
 
                 else:
 
