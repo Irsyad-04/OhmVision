@@ -539,6 +539,7 @@ document.getElementById(
 
 let stream;
 let detectionInterval = null;
+let isProcessing = false;
 
 function showToast(message){
 
@@ -732,7 +733,7 @@ function startDetection(){
     detectionInterval =
     setInterval(
         captureImage,
-        1500
+        3000
     );
 }
 
@@ -760,6 +761,12 @@ function stopDetection(){
 }
 
 function captureImage(){
+
+    if(isProcessing){
+        return;
+    }
+
+    isProcessing = true;
 
     canvas.width =
     video.videoWidth;
@@ -886,13 +893,16 @@ function captureImage(){
 
         }catch(error){
 
-            console.error(
-                error
-            );
+            console.error(error);
 
+        }finally{
+
+            isProcessing = false;
         }
 
     },"image/jpeg");
+
+    isProcessing = false;
 }
 
 // =====================
