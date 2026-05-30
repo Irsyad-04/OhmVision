@@ -1,4 +1,10 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import (
+    Flask,
+    render_template,
+    request,
+    send_from_directory,
+    jsonify
+)
 from ultralytics import YOLO
 import cv2
 import os
@@ -122,6 +128,55 @@ def calculate_resistor(colors):
         return f"{int(value)} Ω"
 
 # =========================
+# PROCESS IMAGE
+# =========================
+
+def process_resistor_image(upload_path, filename):
+
+    results = model.predict(
+        source=upload_path,
+        conf=0.60
+    )
+
+    annotated = results[0].plot()
+
+    result_filename = "result_" + filename
+
+    result_path = os.path.join(
+        app.config["UPLOAD_FOLDER"],
+        result_filename
+    )
+
+    cv2.imwrite(result_path, annotated)
+
+    detections = []
+
+    for box in results[0].boxes:
+
+        cls_id = int(box.cls[0])
+
+        label = model.names[cls_id]
+
+        conf = float(box.conf[0])
+
+        x1 = float(box.xyxy[0][0])
+
+        detections.append({
+
+            "label": label,
+            "conf": conf,
+            "x": x1
+
+        })
+
+    return {
+    "results": results,
+    "result_path": result_path,
+    "result_filename": result_filename,
+    "detections": detections
+    }
+
+# =========================
 # HOME ROUTE
 # =========================
 
@@ -199,6 +254,8 @@ def home():
                 conf=0.60
 
             )
+
+            print("TOTAL BOXES =", len(results[0].boxes))
 
             annotated = results[0].plot()
 
@@ -473,6 +530,166 @@ def home():
         error_message=error_message
 
     )
+
+# =========================
+# LIVE DETECTION API
+# =========================
+
+@app.route("/live_detect", methods=["POST"])
+def live_detect():
+
+    try:
+
+        if "image" not in request.files:
+
+            return jsonify({
+                "success": False,
+                "message": "No image uploaded"
+            })
+
+        file = request.files["image"]
+
+        if file.filename == "":
+
+            return jsonify({
+                "success": False,
+                "message": "Empty filename"
+            })
+
+        upload_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            file.filename
+        )
+
+        file.save(upload_path)
+
+        print("UPLOAD PATH =", upload_path)
+        print("FILE EXISTS =", os.path.exists(upload_path))
+
+        detection_data = process_resistor_image(
+            upload_path,
+            file.filename
+        )
+
+        print("\n===== LIVE DETECTION =====")
+
+        for d in detection_data["detections"]:
+            print(d)
+
+        print("==========================\n")
+
+        detections = detection_data["detections"]
+
+        print("TOTAL DETECTIONS =", len(detections))
+
+        detections = sorted(
+            detections,
+            key=lambda d: d["x"]
+        )
+
+        color_bands = []
+
+        for d in detections:
+
+            if d["label"] != "resistor":
+
+                color_bands.append(d)
+
+        color_names = [
+
+            d["label"]
+
+            for d in color_bands
+
+        ]
+
+        print("COLOR NAMES =", color_names)
+
+        if len(color_names) == 0:
+
+            return jsonify({
+
+                "success": False,
+
+                "message": "No resistor detected"
+
+            })
+
+        if "gold" in color_names:
+
+            gold_index = color_names.index(
+                "gold"
+            )
+
+            if gold_index < len(color_names)/2:
+
+                color_names.reverse()
+
+        elif "silver" in color_names:
+
+            silver_index = color_names.index(
+                "silver"
+            )
+
+            if silver_index < len(color_names)/2:
+
+                color_names.reverse()
+
+        if len(color_names) == 4:
+
+            resistor_type = "4 Band Resistor"
+
+        elif len(color_names) == 5:
+
+            resistor_type = "5 Band Resistor"
+
+        else:
+
+            resistor_type = f"{len(color_names)} Band"
+
+        result_value = calculate_resistor(
+            color_names
+        )
+
+        tolerance_value = "-"
+
+        if len(color_names) >= 4:
+
+            tolerance_value = tolerance_map.get(
+
+                color_names[-1],
+
+                "-"
+
+            )    
+
+        return jsonify({
+
+            "success": True,
+
+            "result_image":
+            detection_data["result_path"],
+
+            "result_value":
+            result_value,
+
+            "tolerance":
+            tolerance_value,
+
+            "resistor_type":
+            resistor_type
+
+        })
+
+    except Exception as e:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        })
 
 # =========================
 # DOWNLOAD RESULT

@@ -11,7 +11,8 @@
     <title>OhmVision</title>
 
     <link rel="icon"
-    href="https://cdn-icons-png.flaticon.com/512/1614/1614527.png">
+    type="image/png"
+    href="{{ url_for('static', filename='favicon.png') }}">
 
     <link rel="stylesheet"
           href="{{ url_for('static',
@@ -26,6 +27,14 @@
     <!-- HEADER -->
 
     <header class="header">
+
+        <div class="logo-container">
+
+            <img
+            src="{{ url_for('static', filename='favicon.png') }}"
+            alt="OhmVision Logo">
+
+        </div>
 
         <div class="logo">
 
@@ -83,7 +92,7 @@
                 <button class="feature-btn"
                 onclick="openCamera()">
 
-                    Live Camera
+                    Live Detection
 
                 </button>
 
@@ -92,7 +101,7 @@
                 <button class="feature-btn"
                 onclick="openMobileCamera()">
 
-                    Mobile Camera
+                    Capture Image
 
                 </button>
 
@@ -102,7 +111,7 @@
 
             <input type="file"
             id="uploadInput"
-            accept="image/*"
+            accept=".jpg,.jpeg,.png"
             hidden>
 
             <input type="file"
@@ -337,18 +346,108 @@ id="cameraModal">
 
     <div class="camera-modal-content">
 
-        <video id="video"
+       <video id="video"
         autoplay></video>
+
+        <div class="live-divider"></div>
 
         <canvas id="canvas"
         hidden></canvas>
 
+        <div id="liveResult"
+        style="
+        margin-top:20px;
+        display:none;
+        ">
+
+            <p id="liveStatus">
+
+                🟢 Detecting...
+
+            </p>
+
+            <h3>
+                Live Detection Result
+            </h3>
+
+            <img
+            id="liveResultImage">
+
+            <div class="live-result-card">
+
+                <div class="result-group">
+
+                    <p class="result-label">
+
+                        Resistor Type
+
+                    </p>
+
+                    <h2 id="liveType">
+
+                        -
+
+                    </h2>
+
+                </div>
+
+                <div class="value-row">
+
+                    <div>
+
+                        <p class="result-label">
+
+                            Resistance Value
+
+                        </p>
+
+                        <div
+                        class="resistance-value"
+                        id="liveValue">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                    <div>
+
+                        <p class="result-label">
+
+                            Tolerance
+
+                        </p>
+
+                        <div
+                        class="tolerance-value"
+                        id="liveTolerance">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
         <div class="camera-actions">
 
             <button class="feature-btn"
-            onclick="captureImage()">
+            onclick="startDetection()">
 
-                Capture & Detect
+                Start Detection
+
+            </button>
+
+            <button class="feature-btn"
+            onclick="stopDetection()">
+
+                Stop Detection
 
             </button>
 
@@ -416,6 +515,8 @@ document.querySelector(
 ".detect-btn"
 );
 
+detectBtn.disabled = true;
+
 const loading =
 document.getElementById(
 "loadingOverlay"
@@ -437,6 +538,30 @@ document.getElementById(
 );
 
 let stream;
+let detectionInterval = null;
+
+function showToast(message){
+
+    const toast =
+    document.getElementById(
+    "toast"
+    );
+
+    toast.innerHTML =
+    message;
+
+    toast.classList.add(
+    "show"
+    );
+
+    setTimeout(()=>{
+
+        toast.classList.remove(
+        "show"
+        );
+
+    },2000);
+}
 
 // =====================
 // UPLOAD IMAGE
@@ -482,6 +607,11 @@ uploadInput.addEventListener(
 
     empty.style.display =
     "none";
+
+    detectBtn.disabled = false;
+
+    detectBtn.innerHTML =
+    "Detect Resistor";
 
 });
 
@@ -530,6 +660,11 @@ mobileInput.addEventListener(
     empty.style.display =
     "none";
 
+    detectBtn.disabled = false;
+
+    detectBtn.innerHTML =
+    "Detect Resistor";
+
 });
 
 // =====================
@@ -556,6 +691,12 @@ async function openCamera(){
 
 function closeCamera(){
 
+    stopDetection();
+
+    showToast(
+        "📷 Camera Closed"
+    );
+
     modal.classList.remove(
     "show"
     );
@@ -565,6 +706,57 @@ function closeCamera(){
         stream.getTracks()
         .forEach(track=>track.stop());
     }
+}
+
+function startDetection(){
+
+    if(detectionInterval){
+
+        return;
+    }
+
+    showToast(
+        "🟢 Live Detection Started"
+    );
+
+    document.getElementById(
+    "liveStatus"
+    ).innerHTML =
+    "🟢 Detecting...";
+
+    document.getElementById(
+    "liveStatus"
+    ).style.color =
+    "#4ade80";
+
+    detectionInterval =
+    setInterval(
+        captureImage,
+        1500
+    );
+}
+
+function stopDetection(){
+
+    clearInterval(
+        detectionInterval
+    );
+
+    detectionInterval = null;
+
+    showToast(
+        "🔴 Detection Stopped"
+    );
+
+    document.getElementById(
+    "liveStatus"
+    ).innerHTML =
+    "🔴 Detection Stopped";
+
+    document.getElementById(
+    "liveStatus"
+    ).style.color =
+    "#ef4444";
 }
 
 function captureImage(){
@@ -579,39 +771,128 @@ function captureImage(){
     canvas.getContext("2d");
 
     ctx.drawImage(
-    video,
-    0,
-    0
+        video,
+        0,
+        0
     );
 
-    canvas.toBlob(blob=>{
+    canvas.toBlob(async blob=>{
 
-        const file =
-        new File(
+        const formData =
+        new FormData();
 
-            [blob],
+        formData.append(
 
-            "live_camera.jpg",
+            "image",
 
-            {
+            blob,
 
-                type:"image/jpeg"
-
-            }
+            "live_camera.jpg"
 
         );
 
-        const dt =
-        new DataTransfer();
+        try{
+            
 
-        dt.items.add(file);
+            const response =
+            await fetch(
+            
+                "/live_detect",
 
-        realInput.files =
-        dt.files;
+                {
 
-        form.submit();
+                    method:"POST",
 
-    });
+                    body:formData
+
+                }
+
+            );
+
+
+            const data =
+            await response.json();
+
+
+            if(!data.success){
+
+                document.getElementById(
+                "liveStatus"
+                ).innerHTML =
+                "🟡 Waiting for resistor...";
+
+                document.getElementById(
+                "liveStatus"
+                ).style.color =
+                "#facc15";
+
+                return;
+            }
+
+            if(data.success){
+
+                document
+                .getElementById(
+                "liveStatus"
+                )
+                .innerHTML =
+                "🟢 Detecting...";
+
+                document
+                .getElementById(
+                "liveStatus"
+                )
+                .style.color =
+                "#4ade80";
+
+                document
+                .getElementById(
+                "liveResult"
+                )
+                .style.display =
+                "block";
+
+                document
+                .getElementById(
+                "liveResultImage"
+                )
+                .src =
+                data.result_image +
+                "?t=" +
+                Date.now();
+
+                document
+                .getElementById(
+                "liveType"
+                )
+                .textContent =
+                data.resistor_type;
+
+                document
+                .getElementById(
+                "liveValue"
+                )
+                .textContent =
+                data.result_value;
+
+                document
+                .getElementById(
+                "liveTolerance"
+                )
+                .textContent =
+                data.tolerance;
+
+            }
+
+        }catch(error){
+
+            console.error(
+                error
+            );
+
+        }
+
+    },"image/jpeg");
 }
 
 // =====================
@@ -671,6 +952,34 @@ window.onload = ()=>{
 };
 
 </script>
+
+<footer class="footer">
+
+    <p>
+
+         © 2026 OhmVision 
+
+    </p>
+
+    <p>
+
+        Resistor Detection Using YOLOv11s
+
+    </p>
+
+    <p>
+
+        Developed by Kelompok 8 
+
+    </p>
+
+    <p>
+
+        D4 - Teknik Elektronika POLBAN 
+
+    </p>
+
+</footer>
 
 </body>
 </html>
